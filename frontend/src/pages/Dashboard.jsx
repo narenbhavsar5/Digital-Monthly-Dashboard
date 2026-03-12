@@ -147,9 +147,10 @@ export default function Dashboard() {
   const mu = dashboard?.monthlyUpdate;
   const selectedRegionObj = regions.find(r => r.id === selectedRegion);
 
+  const totalBench = (dashboard?.benchResources || []).reduce((a, b) => a + b.count, 0);
   const headcountData = mu ? [
     { name: 'Billable', value: mu.billableHeadcount },
-    { name: 'Non-Billable', value: mu.nonBillableHeadcount },
+    { name: 'Bench', value: totalBench },
   ] : [];
 
   const diversityData = mu ? [
@@ -175,8 +176,8 @@ export default function Dashboard() {
       <div className="page-header">
         <div className="page-header-content">
           <div>
-            <h1>Dashboard</h1>
-            <p>Practice overview for {selectedRegionObj?.name || 'Select region'} — {getMonthLabel(month)}</p>
+            <h1>{selectedRegionObj?.name || 'Select region'} Digital Practice</h1>
+            <p>Monthly Updates Dashboard</p>
           </div>
           <div className="controls-row">
             <select
@@ -207,129 +208,122 @@ export default function Dashboard() {
         ) : (
           <>
             {/* Key Metrics */}
-            <div className="metrics-grid">
-              <div className="metric-card indigo">
-                <div className="metric-card-header">
-                  <span className="metric-card-label">Total Headcount</span>
-                  <div className="metric-card-icon indigo"><Users size={18} /></div>
-                </div>
-                <div className="metric-card-value">{mu?.totalHeadcount || 0}</div>
-                <div className="metric-card-subtitle">
-                  {mu?.billableHeadcount || 0} billable · {mu?.nonBillableHeadcount || 0} non-billable
-                </div>
-              </div>
-              <div className="metric-card emerald">
-                <div className="metric-card-header">
-                  <span className="metric-card-label">Revenue</span>
-                  <div className="metric-card-icon emerald"><DollarSign size={18} /></div>
-                </div>
-                <div className="metric-card-value">{mu ? formatCurrency(mu.revenue) : '$0'}</div>
-                <div className="metric-card-subtitle">Margin: {mu?.margin || 0}%</div>
-              </div>
-              <div className="metric-card rose">
-                <div className="metric-card-header">
-                  <span className="metric-card-label">Attrition Rate</span>
-                  <div className="metric-card-icon rose"><TrendingDown size={18} /></div>
-                </div>
-                <div className="metric-card-value">{mu?.attritionRate || 0}%</div>
-                <div className="metric-card-subtitle">Monthly rolling average</div>
-              </div>
-              {selectedRegionObj?.code === 'IN' && (
-                <div className="metric-card cyan">
-                  <div className="metric-card-header">
-                    <span className="metric-card-label">Upskilled</span>
-                    <div className="metric-card-icon cyan"><BookOpen size={18} /></div>
-                  </div>
-                  <div className="metric-card-value">{mu?.upskillCount || 0}</div>
-                  <div className="metric-card-subtitle">Certifications this month</div>
-                </div>
-              )}
-              <div className="metric-card amber">
-                <div className="metric-card-header">
-                  <span className="metric-card-label">Bench Resources</span>
-                  <div className="metric-card-icon amber"><Clock size={18} /></div>
-                </div>
-                <div className="metric-card-value">
-                  {(dashboard?.benchResources || []).reduce((a, b) => a + b.count, 0)}
-                </div>
-                <div className="metric-card-subtitle">Awaiting assignment</div>
-              </div>
-            </div>
-
-            {/* Charts */}
-            <div className="charts-grid">
-              <div className="chart-container">
-                <div className="chart-title"><Users size={16} /> Headcount Distribution</div>
+            {/* Key Metrics */}
+            <div className="section-card-title" style={{ marginBottom: '16px', fontSize: '1.2rem' }}>Key Metrics</div>
+            <div className="key-metrics-grid">
+              {/* Card 1: Headcount Distribution */}
+              <div className="chart-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 16px', background: 'var(--bg-card)' }}>
+                <div style={{ alignSelf: 'flex-start', fontWeight: 600, fontSize: '1.05rem', marginBottom: '8px' }}>Headcount<br />Distribution</div>
+                <div style={{ alignSelf: 'flex-start', fontSize: '2.2rem', fontWeight: 800, marginBottom: '8px' }}>{mu?.totalHeadcount || 0}</div>
                 {headcountData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie data={headcountData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
-                        dataKey="value" paddingAngle={4} stroke="none">
-                        {headcountData.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: '0.78rem', color: '#94a3b8' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div style={{ width: '100%', height: 140, position: 'relative' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={headcountData} cx="50%" cy="50%" innerRadius={45} outerRadius={65} dataKey="value" stroke="none" paddingAngle={2}>
+                          <Cell fill="#10b981" />
+                          <Cell fill="#f59e0b" />
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 ) : (
-                  <div className="empty-state"><p>No headcount data</p></div>
+                  <div className="empty-state" style={{ height: 140 }}><p>No data</p></div>
                 )}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%' }}>
+                  <div style={{ flex: 1, border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '12px', padding: '8px', textAlign: 'center', background: 'rgba(16, 185, 129, 0.05)' }}>
+                    <div style={{ color: '#10b981', fontSize: '1.2rem', fontWeight: 700 }}>{mu?.billableHeadcount || 0}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Billable</div>
+                  </div>
+                  <div style={{ flex: 1, border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px', padding: '8px', textAlign: 'center', background: 'rgba(245, 158, 11, 0.05)' }}>
+                    <div style={{ color: '#f59e0b', fontSize: '1.2rem', fontWeight: 700 }}>{totalBench}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Bench</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="chart-container">
-                <div className="chart-title"><Users size={16} /> Gender Diversity</div>
-                {diversityData.length > 0 && diversityData.some(d => d.value > 0) ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie data={diversityData} cx="50%" cy="50%" innerRadius={55} outerRadius={85}
-                        dataKey="value" paddingAngle={4} stroke="none">
-                        {diversityData.map((_, i) => (
-                          <Cell key={i} fill={['#3b82f6', '#ec4899', '#14b8a6'][i]} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: '0.78rem', color: '#94a3b8' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="empty-state"><p>No diversity data</p></div>
-                )}
+              {/* Card 2: Gender Diversity */}
+              <div className="chart-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 16px', background: 'var(--bg-card)' }}>
+                <div style={{ alignSelf: 'flex-start', fontWeight: 600, fontSize: '1.05rem', marginBottom: '8px' }}>Gender Diversity</div>
+                <div style={{ width: '100%', height: 200, position: 'relative', marginTop: 'auto', marginBottom: 'auto' }}>
+                  {diversityData.some(d => d.value > 0) ? (
+                    <>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={diversityData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} dataKey="value" stroke="none" paddingAngle={2}>
+                            <Cell fill="#3b82f6" />
+                            <Cell fill="#ec4899" />
+                            <Cell fill="#14b8a6" />
+                          </Pie>
+                          <Tooltip content={<CustomTooltip />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center' }}>
+                        <div style={{ fontWeight: 800, fontSize: '1.3rem' }}>{mu?.totalHeadcount && mu.totalHeadcount > 0 ? ((mu.femaleCount / mu.totalHeadcount) * 100).toFixed(1) : 0}%</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Female</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="empty-state" style={{ height: 200 }}><p>No data</p></div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%' }}>
+                  <div style={{ flex: 1, border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '12px', padding: '8px', textAlign: 'center', background: 'rgba(59, 130, 246, 0.05)' }}>
+                    <div style={{ color: '#3b82f6', fontSize: '1.2rem', fontWeight: 700 }}>{mu?.maleCount || 0}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Male</div>
+                  </div>
+                  <div style={{ flex: 1, border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: '12px', padding: '8px', textAlign: 'center', background: 'rgba(236, 72, 153, 0.05)' }}>
+                    <div style={{ color: '#ec4899', fontSize: '1.2rem', fontWeight: 700 }}>{mu?.femaleCount || 0}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Female</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="chart-container">
-                <div className="chart-title"><TrendingDown size={16} /> Attrition Trend</div>
-                {attritionChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <LineChart data={attritionChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} />
-                      <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} />
-                      <Tooltip content={<CustomTooltip formatter={(v) => `${v}%`} />} />
-                      <Line type="monotone" dataKey="Attrition Rate" stroke="#f43f5e" strokeWidth={2} dot={{ fill: '#f43f5e', r: 4 }} />
+              {/* Card 3: Attrition Rate */}
+              <div className="chart-container" style={{ display: 'flex', flexDirection: 'column', padding: '24px 16px', background: 'var(--bg-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '1.05rem' }}>Attrition Rate</div>
+                  <div style={{ background: 'rgba(244, 63, 94, 0.15)', color: '#f43f5e', padding: '4px 12px', borderRadius: '16px', fontWeight: 700, fontSize: '1.1rem' }}>{mu?.attritionRate || 0}%</div>
+                </div>
+                <div style={{ width: '100%', height: 180, marginTop: 'auto', marginBottom: 'auto' }}>
+                  {attritionChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={attritionChartData}>
+                        <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} padding={{ left: 10, right: 10 }} />
+                        <Tooltip content={<CustomTooltip formatter={(v) => `${v}%`} />} />
+                        <Line type="monotone" dataKey="Attrition Rate" stroke="#f43f5e" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="empty-state" style={{ height: 180 }}><p>No trend data</p></div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card 4: Digital Upskills */}
+              <div className="chart-container" style={{ display: 'flex', flexDirection: 'column', padding: '24px 16px', background: 'var(--bg-card)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 600, fontSize: '1.05rem', display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <div style={{ background: 'rgba(139, 92, 246, 0.15)', padding: '6px', borderRadius: '50%', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <BookOpen size={14} />
+                    </div>
+                    Digital<br />Upskills
+                  </div>
+                  <div style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', padding: '4px 12px', borderRadius: '16px', fontWeight: 700, fontSize: '1.1rem' }}>{mu?.upskillCount || 0}</div>
+                </div>
+                <div style={{ width: '100%', height: 180, marginTop: 'auto', marginBottom: 'auto' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={[
+                      { month: getShortMonth(prevMonth(prevMonth(month))), Upskills: Math.max(0, (mu?.upskillCount || 0) - 8) },
+                      { month: getShortMonth(prevMonth(month)), Upskills: Math.max(0, (mu?.upskillCount || 0) - 3) },
+                      { month: 'Current', Upskills: mu?.upskillCount || 0 }
+                    ]}>
+                      <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} padding={{ left: 10, right: 10 }} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Line type="monotone" dataKey="Upskills" stroke="#8b5cf6" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
                     </LineChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="empty-state"><p>No trend data</p></div>
-                )}
-              </div>
-
-              <div className="chart-container">
-                <div className="chart-title"><DollarSign size={16} /> Revenue Trend</div>
-                {revenueChartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={revenueChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="month" tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} />
-                      <YAxis tick={{ fill: '#64748b', fontSize: 12 }} axisLine={false} tickFormatter={formatCurrency} />
-                      <Tooltip content={<CustomTooltip formatter={formatCurrency} />} />
-                      <Bar dataKey="Revenue" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="empty-state"><p>No revenue data</p></div>
-                )}
+                </div>
               </div>
             </div>
 

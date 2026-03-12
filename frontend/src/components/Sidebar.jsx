@@ -9,8 +9,8 @@ export default function Sidebar() {
           <Activity size={20} />
         </div>
         <div>
-          <h1>BenchWise</h1>
-          <span>Practice Management</span>
+          <h1 style={{ fontSize: '1rem' }}>Digital Practice</h1>
+          <span>Monthly Updates</span>
         </div>
       </div>
       <nav className="sidebar-nav">
