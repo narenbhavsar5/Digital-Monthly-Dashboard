@@ -2,6 +2,18 @@ import strawberry
 from typing import Optional, List
 from datetime import datetime
 
+@strawberry.type
+class User:
+    id: str
+    email: str
+    is_active: bool
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+@strawberry.type
+class AuthPayload:
+    token: str
+    user: User
 
 @strawberry.type
 class Region:

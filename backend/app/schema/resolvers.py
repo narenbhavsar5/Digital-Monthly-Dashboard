@@ -8,8 +8,10 @@ from app.schema.types import (
     UpcomingRelease, NewHire, BenchResource, Challenge,
     RegionInput, MonthlyUpdateInput, PreSalesInput, ActionPlanInput,
     OpenRoleInput, UpcomingReleaseInput, NewHireInput, BenchResourceInput,
-    ChallengeInput, ReorderInput, DashboardData, AttritionTrend, RevenueTrend
+    ChallengeInput, ReorderInput, DashboardData, AttritionTrend, RevenueTrend,
+    User, AuthPayload
 )
+from app.auth import get_password_hash, verify_password, create_access_token
 
 
 def doc_to_dict(doc):
@@ -196,6 +198,46 @@ class Query:
 
 @strawberry.type
 class Mutation:
+    # ---- Auth ----
+    @strawberry.mutation
+    async def signup(self, email: str, password: str) -> AuthPayload:
+        db = get_db()
+        existing_user = await db.users.find_one({"email": email})
+        if existing_user:
+            raise Exception("Email already registered")
+        
+        hashed_password = get_password_hash(password)
+        doc = {
+            "email": email,
+            "password_hash": hashed_password,
+            "is_active": True,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        result = await db.users.insert_one(doc)
+        doc["_id"] = result.inserted_id
+        doc_dict = doc_to_dict(doc)
+        doc_dict.pop("password_hash", None)
+        user = User(**doc_dict)
+        token = create_access_token({"sub": str(user.id)})
+        return AuthPayload(token=token, user=user)
+
+    @strawberry.mutation
+    async def login(self, email: str, password: str) -> AuthPayload:
+        db = get_db()
+        doc = await db.users.find_one({"email": email})
+        if not doc:
+            raise Exception("Invalid email or password")
+        
+        if not verify_password(password, doc["password_hash"]):
+            raise Exception("Invalid email or password")
+            
+        doc_dict = doc_to_dict(doc)
+        doc_dict.pop("password_hash", None)
+        user = User(**doc_dict)
+        token = create_access_token({"sub": str(user.id)})
+        return AuthPayload(token=token, user=user)
+
     # ---- Region ----
     @strawberry.mutation
     async def create_region(self, input: RegionInput) -> Region:

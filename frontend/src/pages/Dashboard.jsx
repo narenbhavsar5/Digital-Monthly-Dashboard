@@ -6,7 +6,8 @@ import {
 } from 'recharts';
 import {
   Users, DollarSign, TrendingDown, BookOpen, ChevronLeft, ChevronRight,
-  Briefcase, AlertTriangle, Target, UserPlus, Clock, ArrowUpDown
+  Briefcase, AlertTriangle, Target, UserPlus, Clock, ArrowUpDown,
+  FileText, Building2, MapPin, CalendarDays, ListTodo, Shield, Info
 } from 'lucide-react';
 import { GET_REGIONS, GET_DASHBOARD_DATA, GET_ATTRITION_TRENDS, GET_REVENUE_TRENDS } from '../graphql/queries';
 
@@ -17,6 +18,8 @@ const formatCurrency = (v) => {
   if (v >= 1000) return `$${(v / 1000).toFixed(0)}K`;
   return `$${v}`;
 };
+
+const formatExactCurrency = (v) => `$${(v).toLocaleString('en-US')}`;
 
 const getMonthLabel = (m) => {
   const [y, mo] = m.split('-');
@@ -56,10 +59,11 @@ function CustomTooltip({ active, payload, label, formatter }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: 'rgba(17,24,39,0.95)', border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem'
+      background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)',
+      borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem',
+      boxShadow: 'var(--shadow-md)'
     }}>
-      <p style={{ color: '#94a3b8', marginBottom: '4px' }}>{label}</p>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color, fontWeight: 600 }}>
           {p.name}: {formatter ? formatter(p.value) : p.value}
@@ -69,7 +73,7 @@ function CustomTooltip({ active, payload, label, formatter }) {
   );
 }
 
-function GroupedTable({ data, title, icon: Icon }) {
+function GroupedTable({ data, title, icon: Icon, unit = "roles" }) {
   const grouped = useMemo(() => {
     const g = {};
     data.forEach(item => {
@@ -82,35 +86,53 @@ function GroupedTable({ data, title, icon: Icon }) {
   if (!data.length) return null;
 
   const totalCount = data.reduce((acc, item) => acc + item.count, 0);
+  const isRoles = title.includes('Roles');
+  const accentColor = isRoles ? '#3b82f6' : '#10b981';
+  const accentBg = isRoles ? 'rgba(59, 130, 246, 0.15)' : 'rgba(16, 185, 129, 0.15)';
 
   return (
-    <div className="section-card">
-      <div className="section-card-header">
-        <span className="section-card-title"><Icon size={16} />{title}</span>
-        <span className="badge badge-inprogress">{totalCount} total</span>
+    <div className="section-card" style={{ background: 'transparent', border: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column' }}>
+      <div className="section-card-header" style={{ background: 'transparent', borderBottom: 'none', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ background: accentBg, padding: '10px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Icon size={20} style={{ color: accentColor }} />
+          </div>
+          <div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{title}</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Grouped by skill</div>
+          </div>
+        </div>
+        <div style={{ background: accentBg, color: accentColor, padding: '6px 14px', borderRadius: '24px', fontWeight: 700, fontSize: '1.1rem' }}>{totalCount}</div>
       </div>
-      <div className="section-card-body" style={{ padding: 0 }}>
-        <table className="data-table">
-          <thead>
-            <tr><th>Account</th><th>Location</th><th>Count</th></tr>
-          </thead>
-          <tbody>
-            {Object.entries(grouped).map(([skill, items]) => (
-              <React.Fragment key={skill}>
-                <tr className="skill-group-header">
-                  <td colSpan={3}>{skill} ({items.reduce((a, b) => a + b.count, 0)})</td>
-                </tr>
-                {items.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.account}</td>
-                    <td>{item.location}</td>
-                    <td style={{ fontWeight: 600 }}>{item.count}</td>
-                  </tr>
+      <div className="section-card-body custom-scrollbar" style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '280px', overflowY: 'auto' }}>
+        {Object.entries(grouped).map(([skill, items]) => {
+          const skillTotal = items.reduce((a, b) => a + b.count, 0);
+          return (
+            <div key={skill} style={{ flexShrink: 0, border: '1px solid var(--border-secondary)', borderRadius: '12px', overflow: 'hidden', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)' }}>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>{skill}</div>
+                <div style={{ background: accentBg, color: accentColor, padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>{skillTotal} {unit}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {items.map((item, idx) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderBottom: idx < items.length - 1 ? '1px solid var(--border-secondary)' : 'none' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <Building2 size={16} style={{ color: 'var(--text-muted)' }} /> {item.account}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        <MapPin size={16} style={{ color: 'var(--text-muted)' }} /> {item.location}
+                      </div>
+                    </div>
+                    <div style={{ background: accentBg, color: accentColor, padding: '6px 14px', borderRadius: '12px', fontWeight: 800, fontSize: '1.1rem' }}>
+                      {item.count}
+                    </div>
+                  </div>
                 ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -328,26 +350,44 @@ export default function Dashboard() {
             </div>
 
             {/* Pre-Sales */}
-            <div className="section-card">
-              <div className="section-card-header">
-                <span className="section-card-title"><Briefcase size={16} /> Pre-Sales Pipeline</span>
-                <span className="badge badge-inprogress">{(dashboard?.preSales || []).length} items</span>
+            <div className="section-card" style={{ background: 'transparent', border: '1px solid var(--border-primary)' }}>
+              <div className="section-card-header" style={{ background: 'transparent', borderBottom: 'none', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px' }}>
+                <div style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '12px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <FileText size={20} style={{ color: '#818cf8' }} />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>Pre-Sales Update</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{(dashboard?.preSales || []).length} total opportunities</div>
+                </div>
               </div>
-              <div className="section-card-body">
-                <div className="presales-list">
-                  {(dashboard?.preSales || []).map(ps => (
-                    <div key={ps.id} className="presales-item">
-                      <div className="presales-item-header">
-                        <span className="presales-item-title">{ps.title}</span>
-                        <span className={getBadgeClass(ps.status)}>{ps.status}</span>
+              <div className="section-card-body" style={{ padding: '0 24px 20px 24px' }}>
+                <div className="presales-list" style={{ gap: '0', maxHeight: 'none' }}>
+                  {(dashboard?.preSales || []).map((ps, idx) => {
+                    const isUnderway = ps.status.toLowerCase() === 'underway';
+                    return (
+                      <div key={ps.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0', borderBottom: idx < (dashboard?.preSales?.length || 0) - 1 ? '1px solid var(--border-secondary)' : 'none' }}>
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)', marginTop: '8px', flexShrink: 0 }} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>{ps.title}</div>
+                            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{ps.description || `We are currently exploring this opportunity and awaiting feedback.`}</div>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{ps.client}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0, marginLeft: '16px' }}>
+                          <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#10b981' }}>{formatExactCurrency(ps.value)}</div>
+                          <div style={{ 
+                            background: isUnderway ? '#fef3c7' : 'white', 
+                            color: isUnderway ? '#b45309' : '#3b82f6', 
+                            padding: '4px 16px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                             }}>
+                            {ps.status}
+                          </div>
+                        </div>
                       </div>
-                      <div className="presales-item-meta">
-                        <span className={getBadgeClass(ps.type)}>{ps.type}</span>
-                        <span>Client: {ps.client}</span>
-                        <span className="presales-item-value">{formatCurrency(ps.value)}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   {(dashboard?.preSales || []).length === 0 && (
                     <div className="empty-state"><p>No pre-sales data for this period</p></div>
                   )}
@@ -357,59 +397,91 @@ export default function Dashboard() {
 
             {/* Tables: Open Roles, Releases, New Hires, Bench */}
             <div className="tables-grid">
-              <GroupedTable data={dashboard?.openRoles || []} title="Open Roles" icon={Target} />
-              <GroupedTable data={dashboard?.upcomingReleases || []} title="Upcoming Releases" icon={ArrowUpDown} />
-              <GroupedTable data={dashboard?.newHires || []} title="New Hires" icon={UserPlus} />
-              <GroupedTable data={dashboard?.benchResources || []} title="Bench Resources" icon={Clock} />
+              <GroupedTable data={dashboard?.openRoles || []} title="Open Roles" icon={Briefcase} unit="roles" />
+              <GroupedTable data={dashboard?.upcomingReleases || []} title="Upcoming Releases" icon={CalendarDays} unit="resources" />
+              <GroupedTable data={dashboard?.newHires || []} title="New Hires" icon={UserPlus} unit="hires" />
+              <GroupedTable data={dashboard?.benchResources || []} title="Bench Resources" icon={Clock} unit="resources" />
             </div>
 
-            {/* Action Plans */}
-            <div className="section-card">
-              <div className="section-card-header">
-                <span className="section-card-title"><Target size={16} /> Action Plans</span>
-              </div>
-              <div className="section-card-body" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {(dashboard?.actionPlans || []).map(ap => (
-                  <div key={ap.id} className="action-plan-item">
-                    <div className={`action-plan-priority-dot ${ap.priority.toLowerCase()}`} />
-                    <div className="action-plan-content">
-                      <div className="action-plan-title">{ap.actionItem}</div>
-                      <div className="action-plan-meta">
-                        <span>Assigned: {ap.assignedTo}</span>
-                        <span>Due: {ap.dueDate || 'N/A'}</span>
-                      </div>
+            {/* Action Plans and Challenges */}
+            <div className="tables-grid">
+              {/* Action Plans */}
+              <div className="section-card" style={{ background: 'transparent', border: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column' }}>
+                <div className="section-card-header" style={{ background: 'transparent', borderBottom: 'none', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '10px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <ListTodo size={20} style={{ color: '#a78bfa' }} />
                     </div>
-                    <span className={getBadgeClass(ap.status)}>{ap.status}</span>
-                    <span className={`badge badge-${ap.priority.toLowerCase()}`}>{ap.priority}</span>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Next Action Plans</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{(dashboard?.actionPlans || []).length} action items</div>
+                    </div>
                   </div>
-                ))}
-                {(dashboard?.actionPlans || []).length === 0 && (
-                  <div className="empty-state"><p>No action plans for this period</p></div>
-                )}
-              </div>
-            </div>
-
-            {/* Challenges */}
-            <div className="section-card">
-              <div className="section-card-header">
-                <span className="section-card-title"><AlertTriangle size={16} /> Challenges</span>
-              </div>
-              <div className="section-card-body">
-                <div className="challenges-grid">
-                  {(dashboard?.challenges || []).map(ch => (
-                    <div key={ch.id} className={`challenge-card severity-${ch.severity.toLowerCase()}`}>
-                      <div className="challenge-card-title">
-                        {ch.title}
-                        <span className={`badge badge-${ch.severity.toLowerCase()}`}>{ch.severity}</span>
-                      </div>
-                      {ch.description && <div className="challenge-card-desc">{ch.description}</div>}
-                      {ch.mitigation && (
-                        <div className="challenge-card-mitigation">
-                          <strong>Mitigation:</strong> {ch.mitigation}
+                </div>
+                <div className="section-card-body custom-scrollbar" style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '320px', overflowY: 'auto' }}>
+                  {(dashboard?.actionPlans || []).map(ap => (
+                    <div key={ap.id} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-secondary)', borderRadius: '12px', transition: 'all var(--transition-fast)' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <Info size={16} style={{ color: '#3b82f6', marginTop: '2px', flexShrink: 0 }} />
+                          <div style={{ fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-primary)' }}>{ap.actionItem}</div>
                         </div>
-                      )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', flexShrink: 0 }}>
+                          <span className={getBadgeClass(ap.status)} style={{ background: '#e0e7ff', color: '#3b82f6', borderRadius: '6px', padding: '4px 12px', whiteSpace: 'nowrap' }}>{ap.status}</span>
+                          <span className={`badge badge-${ap.priority.toLowerCase()}`} style={{ background: '#fef3c7', color: '#b45309', borderRadius: '6px', padding: '4px 12px', whiteSpace: 'nowrap' }}>{ap.priority}</span>
+                        </div>
+                      </div>
+                      <div style={{ paddingLeft: '26px' }}>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                          Assigned to: <span style={{ color: '#cbd5e1' }}>{ap.assignedTo}</span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Due: {ap.dueDate || 'N/A'}
+                        </div>
+                      </div>
                     </div>
                   ))}
+                  {(dashboard?.actionPlans || []).length === 0 && (
+                    <div className="empty-state"><p>No action plans for this period</p></div>
+                  )}
+                </div>
+              </div>
+
+              {/* Challenges */}
+              <div className="section-card" style={{ background: 'transparent', border: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column' }}>
+                <div className="section-card-header" style={{ background: 'transparent', borderBottom: 'none', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ background: 'rgba(244, 63, 94, 0.15)', padding: '10px', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      <AlertTriangle size={20} style={{ color: '#f43f5e' }} />
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>Challenges</div>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{(dashboard?.challenges || []).length} active challenges</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="section-card-body custom-scrollbar" style={{ padding: '0 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '320px', overflowY: 'auto' }}>
+                  {(dashboard?.challenges || []).map(ch => {
+                    const sevColors = { low: '#10b981', medium: '#f59e0b', high: '#f97316', critical: '#f43f5e' };
+                    const sevColor = sevColors[ch.severity.toLowerCase()] || '#f43f5e';
+                    return (
+                      <div key={ch.id} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px', padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-secondary)', borderRadius: '12px', borderLeft: `4px solid ${sevColor}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                          <div style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--text-primary)' }}>{ch.title}</div>
+                          <span className={`badge badge-${ch.severity.toLowerCase()}`} style={{ background: '#ffedd5', color: '#c2410c', borderRadius: '6px', padding: '4px 12px', whiteSpace: 'nowrap', flexShrink: 0 }}>{ch.severity}</span>
+                        </div>
+                        {ch.description && <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>{ch.description}</div>}
+                        {ch.mitigation && (
+                          <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)', borderRadius: '8px', padding: '12px 16px', marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981', fontWeight: 600, fontSize: '0.9rem', marginBottom: '4px' }}>
+                              <Shield size={16} /> Mitigation:
+                            </div>
+                            <div style={{ color: '#10b981', fontSize: '0.85rem' }}>{ch.mitigation}</div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   {(dashboard?.challenges || []).length === 0 && (
                     <div className="empty-state"><p>No challenges reported</p></div>
                   )}

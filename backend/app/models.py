@@ -1,7 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 from datetime import datetime, date
 
+class UserModel(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
+    email: EmailStr
+    password_hash: str
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class RegionModel(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
